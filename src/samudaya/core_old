@@ -1,0 +1,159 @@
+(ns ^figwheel-hooks samudaya.core
+  (:require
+   [goog.dom :as gdom]
+   [peer-id :as peerId]
+   [goog.string :as gstring]
+   [async-await.core :refer [async await]]
+   ["status-stream" :as use-status-stream]
+   [cljs-bean.core :refer [->clj ->js]]
+   [cljs.core.async :refer [go]]
+   [cljs.core.async.interop :refer-macros [<p!]]
+   [uix.core.alpha :as uix :refer [defcontext]]
+   [uix.dom.alpha :as uix.dom]
+   ;; [peer-id :as peer-id]
+   [js-waku :refer [ChatMessage
+                    getStatusFleetNodes
+                    Environment
+                    StoreCodec
+                    Waku
+                    WakuMessage]]))
+
+(enable-console-print!)
+
+(defcontext *waku-context* {:waku nil})
+(def use-waku
+  (fn []
+    (uix/context *waku-context*)))
+
+(defn multiply [a b] (* a b))
+
+(defn get-app-element []
+  (gdom/getElement "app"))
+
+(def chat-content-topic "samudayaxyz")
+
+(defn app []
+  (let [waku              (uix/state nil)
+        archived-messages (uix/state (.default use-status-stream @waku chat-content-topic))
+        new-messages      (uix/state #js [])]
+    (uix/with-effect [@waku]
+      (let [handle-relay-message
+            (fn [waku-msg]
+              (when (.. waku-msg -payload)
+                (let [chat-msg (.decode ChatMessage (.. waku-msg -payload))]
+                  (when chat-msg
+                    (js/console.log (.. chat-msg -payloadAsUtf8))
+                    (swap! new-messages (clj->js [chat-msg]))))))]
+        (if (not @waku)
+          (go
+            (let [waku-node (<p! (.create Waku #js {:config
+                                                    #js {:pubsub
+                                                         #js {:enabled  true
+                                                              :emitSelf true}}}) )
+                  nodes     (<p! (getStatusFleetNodes))]
+              (try
+                (doseq [addr (->clj nodes)]
+                  (<p! (.dial waku-node addr))
+                  (js/console.log
+                    (str "waku: Connected to" addr)))
+                (catch js/Error err (js/console.log (ex-cause err))))
+              (swap! waku waku-node)))
+          (do
+            ;; (js/console.log (.default use-status-stream @waku chat-content-topic))
+            (.addObserver (.. @waku -relay)
+                          #(handle-relay-message %)
+                          (clj->js [chat-content-topic]))))))
+    ;; (js/console.log @archived-messages)
+    [:.row
+     [:<>
+      [:.col.col-left
+       [:<>
+        [:ul
+         [:a.logo {:href "#"} [:img {:src "img/logo.png"}]]
+         [:li [:a.active [:i.bx.bxs-home-circle][:span.menu-text "Home"]]]
+         [:li [:a [:i.fas.fa-hashtag][:span.menu-text "Explore"]]]
+         [:li [:a.notification [:i.far.fa-bell][:i [:span.number 13]]
+               [:span.menu-text "Notifications"]]]
+         [:li [:a [:i.far.fa-envelope][:span.menu-text "Messages"]]]
+         [:li [:a [:i.bx.bx-bookmark][:span.menu-text "Bookmarks"]]]
+         [:li [:a [:i.bx.bx-list-ul][:span.menu-text "Lists"]]]
+         [:li [:a [:i.far.fa-user][:span.menu-text "Profile"]]]
+         [:li [:a [:i.bx.bx-dots-horizontal-rounded][:span.menu-text "More"]]]
+         [:li [:button]]]
+        [:.btn-account
+         [:<>
+          [:.account-info
+           [:.img
+            [:img {:src "img/Beans Avatar.jpg" :alt "Perfil"}]]
+           [:.account-info__name [:h2 "BaziotaBeans"][:span "@baziota"]]]
+          [:i.fas.fa-chevron-down]]]]]
+      [:.col.col-middle
+       [:<>
+        [:.col-middle__top [:h1 "Home"][:span [:i.bx.bxs-star-half]]]
+        [:.col-middle__post
+         [:<>
+          [:.col-middle__post__img__profile
+           [:img {:src "img/Beans Avatar.jpg" :alt "Profile"}]]
+          [:.col-middle__post__content
+           [:textarea#textarea {:placeholder "What's happening?"}]
+           [:span.col-middle__post__content__btn
+            [:i.fas.fa-globe-americas]
+            [:h3 "Everyone can reply"]]
+           [:.line]
+           [:.col-middle__post__content__bottom
+            [:.bottom__left
+             [:span [:i.fas.fa-image]]
+             [:span [:i.bx.bxs-file-gif]]
+             [:span [:i.bx.bx-poll]]
+             [:span [:i.far.fa-smile]]
+             [:span [:i.far.fa-calendar-alt]]]
+            [:button.bottom-twett "Tweet"]]]]]
+        [:hr.col-middle__principal_line]
+        [:.col-middle__post__tweet
+         [:<>
+          [:.col-middle__post__img__profile
+           [:img {:src "img/freeCodeCamp.org.jpg" :alt "Profile"}]]
+          [:.col-middle__post__tweet__content
+           [:.col-middle__post__tweet__content_top
+            [:h2.author_name "freeCodeCamp.org"]
+            [:span.checked-user [:i.bx.bxs-badge-check]]
+            [:span.author_account "@freeCodeCamp"]
+            [:span.date [:span (gstring/unescapeEntities "&bull;")] "14m"]]
+           [:.col-middle__post__tweet__content_text
+            [:p (when (get @new-messages 0)
+                  (.. (get @new-messages 0) -payloadAsUtf8))]
+            [:.content__action
+             [:span.comment
+              [:i.far.fa-comment]
+              [:span.comment-number]]
+             [:span.retweet
+              [:i.fas.fa-retweet]
+              [:span.retweet-number]]
+             [:span.favorite
+              [:i.far.fa-heart]
+              [:span.favorite-number]]
+             [:span.external-link
+              [:i.bx.bx-link-external]]]]]
+          [:span.more-info [:i.fas.fa-chevron-down]]]]]]
+      [:.col.col-right
+       [:<>
+        [:.search_bar
+         [:span.search-icon [:i.bx.bx-search]]
+         [:input {:type "text" :placeholder "Search Samudaya"}]]]]]]))
+
+(defn mount [el]
+  (uix.dom/render [app] el))
+
+(defn mount-app-element []
+  (when-let [el (get-app-element)]
+    (mount el)))
+
+(mount-app-element)
+
+(defn ^:after-load on-reload []
+  (js/console.log "reload")
+  (mount-app-element)
+  ;; optionally touch your app-state to force rerendering depending on
+  ;; your application
+  ;; (swap! app-state update-in [:__figwheel_counter] inc)
+  )

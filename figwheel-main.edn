@@ -1,0 +1,7 @@
+{:watch-dirs             ["test" "src"]
+ :css-dirs               ["resources/public/css"]
+ :auto-testing           true
+ :auto-bundle            :webpack
+ :clean-outputs          true
+ :bundle-freq            :smart
+ :log-syntax-error-style :concise}

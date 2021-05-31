@@ -1,0 +1,26 @@
+{:deps    {org.clojure/clojurescript {:mvn/version "1.10.773"}
+           org.clojure/core.async    {:mvn/version "1.3.618"}
+           metosin/reitit            {:mvn/version "0.5.13"}
+           metosin/reitit-frontend   {:mvn/version "0.5.13"}
+           cljs-bean/cljs-bean       {:mvn/version "1.7.0"}
+           async-await/async-await   {:git/url "https://github.com/roman01la/cljs-async-await.git"
+                                      :sha     "cd6a07bd84fb3ed8e1af20938f7df3ed269fa1dd"}
+           uix.core/uix.core         {:deps/root  "core"
+                                      :exclusions [cljsjs/react]
+                                      :git/url    "https://github.com/roman01la/uix.git"
+                                      :sha        "0da33eef38a7122be226b9b9a8ae0b5431b6b5d3"}
+           uix.dom/uix.dom           {:deps/root  "dom"
+                                      :exclusions [cljsjs/react-dom]
+                                      :git/url    "https://github.com/roman01la/uix.git"
+                                      :sha        "0da33eef38a7122be226b9b9a8ae0b5431b6b5d3"}
+           uix.rn/uix.rn             {:git/url   "https://github.com/roman01la/uix.git"
+                                      :deps/root "rn"
+                                      :sha       "0da33eef38a7122be226b9b9a8ae0b5431b6b5d3"}}
+ :paths   ["src" "target" "resources"]
+ :aliases {:fig   {:extra-deps
+                   {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}
+                    com.bhauman/figwheel-main       {:mvn/version "0.2.13"}}
+                   :extra-paths ["target" "test"]}
+           :build {:main-opts ["-m" "figwheel.main" "-b" "dev"]}
+           :min   {:main-opts ["-m" "figwheel.main" "-O" "advanced" "-bo" "dev"]}
+           :test  {:main-opts ["-m" "figwheel.main" "-co" "test.cljs.edn" "-m" "samudaya.test-runner"]}}}

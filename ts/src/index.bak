@@ -1,0 +1,135 @@
+import PeerId from "peer-id";
+import { useEffect, useState } from "react";
+import {
+  ChatMessage,
+  getStatusFleetNodes,
+  Environment,
+  StoreCodec,
+  Waku,
+  WakuMessage,
+} from "js-waku";
+
+async function retrieveStoreMessages(
+  waku: Waku,
+  peerId: PeerId,
+  ChatContentTopic: string,
+  setArchivedMessages: (value: ChatMessage[]) => void
+): Promise<number> {
+  const callback = (wakuMessages: WakuMessage[]): void => {
+    const messages = wakuMessages
+      .map((wakuMsg) => wakuMsg.payload)
+      .filter((payload) => !!payload)
+      .map((payload) => ChatMessage.decode(payload as Uint8Array));
+    setArchivedMessages(messages);
+  };
+
+  const res = await waku.store.queryHistory({
+    peerId,
+    contentTopics: [ChatContentTopic],
+    pageSize: 5,
+    callback,
+  });
+
+  return res ? res.length : 0;
+}
+
+export default function useStatusStream(ChatContentTopic: string) {
+  let [newMessages, setNewMessages] = useState<ChatMessage[]>([]);
+  let [archivedMessages, setArchivedMessages] = useState<ChatMessage[]>([]);
+  let [stateWaku, setWaku] = useState<Waku | undefined>(undefined);
+
+  useEffect(() => {
+    const handleRelayMessage = (wakuMsg: WakuMessage) => {
+      if (wakuMsg.payload) {
+        const chatMsg = ChatMessage.decode(wakuMsg.payload);
+        if (chatMsg) {
+          setNewMessages([chatMsg]);
+        }
+      }
+    };
+
+    const handleProtocolChange = async (
+      waku: Waku,
+      stArchivedMessages: (value: any) => void,
+      { peerId, protocols }: { peerId: PeerId; protocols: string[] }
+    ) => {
+      if (protocols.includes(StoreCodec)) {
+        console.log(`${peerId.toB58String()}: retrieving archived messages}`);
+        try {
+          const length = await retrieveStoreMessages(
+            waku,
+            peerId,
+            ChatContentTopic,
+            stArchivedMessages
+          );
+          console.log(`${peerId.toB58String()}: messages retrieved:`, length);
+        } catch (e) {
+          console.log(
+            `${peerId.toB58String()}: error encountered when retrieving archived messages`,
+            e
+          );
+        }
+      }
+    };
+
+    if (!stateWaku) {
+      initWaku(setWaku)
+        .then(() => console.log("Waku init done"))
+        .catch((e) => console.log("Waku init failed ", e));
+    } else {
+      stateWaku.relay.addObserver(handleRelayMessage, [ChatContentTopic]);
+
+      stateWaku.libp2p.peerStore.on(
+        "change:protocols",
+        handleProtocolChange.bind({}, stateWaku, setArchivedMessages)
+      );
+
+      // To clean up listener when component unmounts
+      return () => {
+        stateWaku?.libp2p.peerStore.removeListener(
+          "change:protocols",
+          handleProtocolChange.bind({}, stateWaku, setArchivedMessages)
+        );
+      };
+    }
+  }, [stateWaku]);
+
+  return [stateWaku, newMessages, archivedMessages];
+}
+
+async function initWaku(setter: (waku: Waku) => void) {
+  try {
+    const waku = await Waku.create({
+      config: {
+        pubsub: {
+          enabled: true,
+          emitSelf: true,
+        },
+      },
+    });
+
+    setter(waku);
+
+    const nodes = await getNodes();
+    /* await waku.dial(
+     *   "/dns4/node-01.gc-us-central1-a.wakuv2.prod.statusim.net/tcp/443/wss/p2p/16Uiu2HAmVkKntsECaYfefR1V2yCR79CegLATuTPE6B9TxgxBiiiA"
+     * ); */
+    await Promise.all(
+      nodes.map((addr) => {
+        return waku.dial(addr);
+      })
+    );
+  } catch (e) {
+    console.log("Issue starting waku ", e);
+  }
+}
+
+function getNodes() {
+  // Works with react-scripts
+  if (process?.env?.NODE_ENV === "development") {
+    /* return getStatusFleetNodes(Environment.Test); */
+    return getStatusFleetNodes(Environment.Prod);
+  } else {
+    return getStatusFleetNodes(Environment.Prod);
+  }
+}

@@ -1,0 +1,52 @@
+Arguments: 
+  /opt/nix/store/lcr10m9cfdm1qpd0kzjgb2iy8mmxcjjc-nodejs-12.18.4/bin/node /Users/yalu/.nix-profile/bin/yarn
+
+PATH: 
+  /Users/yalu/.opam/4.05.0/bin:/Users/yalu/.nix-profile/bin:.:/Users/yalu/bin:/usr/local/bin:/Applications/Emacs.app/Contents/MacOS:/Applications/Emacs.app/Contents/MacOS/bin:/usr/local/opt/openssl/bin:/Applications/Wireshark.app/Contents/MacOS:/usr/local/opt/make/libexec/gnubin:/usr/local/sbin:/usr/bin:/usr/sbin:/sbin:/bin:/Users/yalu/go/bin:/Users/yalu/.nimble/bin:/Users/yalu/.cargo/bin:/Users/yalu/opt/git-friendly:/Users/yalu/.config/yarn/global/node_modules/.bin
+
+Yarn version: 
+  1.22.5
+
+Node version: 
+  12.18.4
+
+Platform: 
+  darwin x64
+
+Trace: 
+  SyntaxError: /Users/yalu/Projects/samudaya/ts/package.json: Unexpected token } in JSON at position 431
+      at JSON.parse (<anonymous>)
+      at /opt/nix/store/0dbynkravj7lixj5mg19vmaxgdxsp5wm-yarn-1.22.5/libexec/yarn/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/opt/nix/store/0dbynkravj7lixj5mg19vmaxgdxsp5wm-yarn-1.22.5/libexec/yarn/lib/cli.js:310:30)
+      at /opt/nix/store/0dbynkravj7lixj5mg19vmaxgdxsp5wm-yarn-1.22.5/libexec/yarn/lib/cli.js:321:13
+
+npm manifest: 
+  {
+    "name": "status-stream",
+    "version": "1.0.0",
+    "main": "lib/index.js",
+    "types": "lib",
+    "scripts": {
+      "build": "tsc -p ."
+    },
+    "author": "bitsikka",
+    "license": "MIT",
+    "devDependencies": {
+      "@types/react": "^17.0.3",
+      "@types/react-dom": "^17.0.3",
+      "peer-id": "^0.14.8",
+      "typescript": "^4.3.2"
+    },
+    "dependencies": {
+      "js-waku": "^0.5.0",
+      "react": "^16.14.0",
+      "react-dom": "^16.14.0",
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

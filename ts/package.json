@@ -1,0 +1,18 @@
+{
+  "name": "status-stream",
+  "version": "1.0.0",
+  "main": "lib/index.js",
+  "types": "lib",
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "author": "bitsikka",
+  "license": "MIT",
+  "devDependencies": {
+    "peer-id": "^0.14.8",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "js-waku": "^0.5.0"
+  }
+}
